@@ -11,8 +11,7 @@ from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
-from coze_coding_utils.runtime_ctx.context import new_context
-from coze_coding_dev_sdk import SearchClient
+
 
 app = Flask(__name__)
 CORS(app)
