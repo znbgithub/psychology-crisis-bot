@@ -232,100 +232,100 @@
             <p>1. 最近一周是否经常感到绝望？</p>
             <select class="score">
                 <option value="" selected>-- 请选择 --</option>
-                <option value="0">没有</option>
-                <option value="1">偶尔</option>
-                <option value="2">经常</option>
-                <option value="3">总是</option>
+                <option value="3">没有</option>
+                <option value="2">偶尔</option>
+                <option value="1">经常</option>
+                <option value="0">总是</option>
             </select>
         </div>
         <div class="question">
             <p>2. 对任何事情都提不起兴趣？</p>
             <select class="score">
                 <option value="" selected>-- 请选择 --</option>
-                <option value="0">没有</option>
-                <option value="1">偶尔</option>
-                <option value="2">经常</option>
-                <option value="3">总是</option>
+                <option value="3">没有</option>
+                <option value="2">偶尔</option>
+                <option value="1">经常</option>
+                <option value="0">总是</option>
             </select>
         </div>
         <div class="question">
             <p>3. 持续情绪低落、难过？</p>
             <select class="score">
                 <option value="" selected>-- 请选择 --</option>
-                <option value="0">没有</option>
-                <option value="1">偶尔</option>
-                <option value="2">经常</option>
-                <option value="3">总是</option>
+                <option value="3">没有</option>
+                <option value="2">偶尔</option>
+                <option value="1">经常</option>
+                <option value="0">总是</option>
             </select>
         </div>
         <div class="question">
             <p>4. 失眠或早醒，无法安稳睡觉？</p>
             <select class="score">
                 <option value="" selected>-- 请选择 --</option>
-                <option value="0">没有</option>
-                <option value="1">偶尔</option>
-                <option value="2">经常</option>
-                <option value="3">总是</option>
+                <option value="3">没有</option>
+                <option value="2">偶尔</option>
+                <option value="1">经常</option>
+                <option value="0">总是</option>
             </select>
         </div>
         <div class="question">
             <p>5. 容易焦虑、心慌、紧张？</p>
             <select class="score">
                 <option value="" selected>-- 请选择 --</option>
-                <option value="0">没有</option>
-                <option value="1">偶尔</option>
-                <option value="2">经常</option>
-                <option value="3">总是</option>
+                <option value="3">没有</option>
+                <option value="2">偶尔</option>
+                <option value="1">经常</option>
+                <option value="0">总是</option>
             </select>
         </div>
         <div class="question">
             <p>6. 觉得自己没有价值？</p>
             <select class="score">
                 <option value="" selected>-- 请选择 --</option>
-                <option value="0">没有</option>
-                <option value="1">偶尔</option>
-                <option value="2">经常</option>
-                <option value="3">总是</option>
+                <option value="3">没有</option>
+                <option value="2">偶尔</option>
+                <option value="1">经常</option>
+                <option value="0">总是</option>
             </select>
         </div>
         <div class="question">
             <p>7. 注意力无法集中？</p>
             <select class="score">
                 <option value="" selected>-- 请选择 --</option>
-                <option value="0">没有</option>
-                <option value="1">偶尔</option>
-                <option value="2">经常</option>
-                <option value="3">总是</option>
+                <option value="3">没有</option>
+                <option value="2">偶尔</option>
+                <option value="1">经常</option>
+                <option value="0">总是</option>
             </select>
         </div>
         <div class="question">
             <p>8. 有自杀或想消失的想法？</p>
             <select class="score" id="danger">
                 <option value="" selected>-- 请选择 --</option>
-                <option value="0">没有</option>
-                <option value="1">偶尔想过</option>
-                <option value="2">经常想</option>
-                <option value="3">已经计划</option>
+                <option value="3">没有</option>
+                <option value="2">偶尔想过</option>
+                <option value="1">经常想</option>
+                <option value="0">已经计划</option>
             </select>
         </div>
         <div class="question">
             <p>9. 回避朋友、家人，不想社交？</p>
             <select class="score">
                 <option value="" selected>-- 请选择 --</option>
-                <option value="0">没有</option>
-                <option value="1">偶尔</option>
-                <option value="2">经常</option>
-                <option value="3">总是</option>
+                <option value="3">没有</option>
+                <option value="2">偶尔</option>
+                <option value="1">经常</option>
+                <option value="0">总是</option>
             </select>
         </div>
         <div class="question">
             <p>10. 觉得未来没有希望？</p>
             <select class="score">
                 <option value="" selected>-- 请选择 --</option>
-                <option value="0">没有</option>
-                <option value="1">偶尔</option>
-                <option value="2">经常</option>
-                <option value="3">总是</option>
+                <option value="3">没有</option>
+                <option value="2">偶尔</option>
+                <option value="1">经常</option>
+                <option value="0">总是</option>
             </select>
         </div>
 
@@ -437,7 +437,7 @@
         }
     }
 
-    // 测评核心逻辑
+    // 测评核心逻辑（已修正为：越健康分数越高）
     function startTest() {
         let total = 0;
         let danger = 0;
@@ -452,18 +452,19 @@
         let level = '';
         let msg = '';
 
-        if (total >= 20 || danger >= 1) {
+        // 满分是30分，分数越高越健康
+        if (total <= 10 || danger <= 1) {
             state = 'critical';
             level = '🔴 高风险状态';
-            msg = `总分：${total}分<br>你的情绪处于高风险状态，出现明显心理危机信号，请立刻联系心理老师或拨打援助热线。`;
-        } else if (total >= 10) {
+            msg = `总分：${total}/30分<br>你的情绪处于高风险状态，出现明显心理危机信号，请立刻联系心理老师或拨打援助热线。`;
+        } else if (total <= 20) {
             state = 'sub_healthy';
             level = '🟡 中度情绪压力';
-            msg = `总分：${total}分<br>你最近压力较大，情绪需要调节，建议多休息、倾诉，及时关注自己的状态。`;
+            msg = `总分：${total}/30分<br>你最近压力较大，情绪需要调节，建议多休息、倾诉，及时关注自己的状态。`;
         } else {
             state = 'healthy';
             level = '🟢 状态良好';
-            msg = `总分：${total}分<br>你的心理状态良好，继续保持健康生活节奏即可。`;
+            msg = `总分：${total}/30分<br>你的心理状态良好，继续保持健康生活节奏即可。`;
         }
 
         updateVisualFeedback(state);
