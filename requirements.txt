@@ -1,3 +1,7 @@
 flask>=2.3.0
 flask-cors>=4.0.0
 gunicorn>=21.0.0
+coze-coding-dev-sdk>=0.5.15
+coze-coding-utils>=0.5.15
+langchain>=0.1.0
+langchain-openai>=0.0.5
