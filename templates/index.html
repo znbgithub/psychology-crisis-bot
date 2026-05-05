@@ -170,6 +170,10 @@
             display: block;
             cursor: pointer;
         }
+        .submit-btn:disabled {
+            background: #999;
+            cursor: not-allowed;
+        }
         .result-box {
             background: #fff8e1;
             padding: 25px;
@@ -181,6 +185,12 @@
         .result-box h3 {
             color: #ff9800;
             margin-bottom: 10px;
+        }
+        .tip-text {
+            color: #e74c3c;
+            text-align: center;
+            margin: 10px 0;
+            display: none;
         }
         .balloon-container { position: fixed; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; z-index: 100; overflow: hidden; }
         .balloon { position: absolute; bottom: -100px; width: 40px; height: 50px; background: linear-gradient(135deg, #00c853, #00e676); border-radius: 50%; animation: float-up 4s ease-in-out forwards; }
@@ -216,10 +226,12 @@
     <!-- 心理危机测评 -->
     <div class="test-container">
         <h2 style="text-align:center; margin-bottom:20px;">🧠 心理危机状态测评</h2>
+        <p class="tip-text" id="tipText">请完成所有题目后再提交！</p>
 
         <div class="question">
             <p>1. 最近一周是否经常感到绝望？</p>
             <select class="score">
+                <option value="" selected>-- 请选择 --</option>
                 <option value="0">没有</option>
                 <option value="1">偶尔</option>
                 <option value="2">经常</option>
@@ -229,6 +241,7 @@
         <div class="question">
             <p>2. 对任何事情都提不起兴趣？</p>
             <select class="score">
+                <option value="" selected>-- 请选择 --</option>
                 <option value="0">没有</option>
                 <option value="1">偶尔</option>
                 <option value="2">经常</option>
@@ -238,6 +251,7 @@
         <div class="question">
             <p>3. 持续情绪低落、难过？</p>
             <select class="score">
+                <option value="" selected>-- 请选择 --</option>
                 <option value="0">没有</option>
                 <option value="1">偶尔</option>
                 <option value="2">经常</option>
@@ -247,6 +261,7 @@
         <div class="question">
             <p>4. 失眠或早醒，无法安稳睡觉？</p>
             <select class="score">
+                <option value="" selected>-- 请选择 --</option>
                 <option value="0">没有</option>
                 <option value="1">偶尔</option>
                 <option value="2">经常</option>
@@ -256,6 +271,7 @@
         <div class="question">
             <p>5. 容易焦虑、心慌、紧张？</p>
             <select class="score">
+                <option value="" selected>-- 请选择 --</option>
                 <option value="0">没有</option>
                 <option value="1">偶尔</option>
                 <option value="2">经常</option>
@@ -265,6 +281,7 @@
         <div class="question">
             <p>6. 觉得自己没有价值？</p>
             <select class="score">
+                <option value="" selected>-- 请选择 --</option>
                 <option value="0">没有</option>
                 <option value="1">偶尔</option>
                 <option value="2">经常</option>
@@ -274,6 +291,7 @@
         <div class="question">
             <p>7. 注意力无法集中？</p>
             <select class="score">
+                <option value="" selected>-- 请选择 --</option>
                 <option value="0">没有</option>
                 <option value="1">偶尔</option>
                 <option value="2">经常</option>
@@ -283,6 +301,7 @@
         <div class="question">
             <p>8. 有自杀或想消失的想法？</p>
             <select class="score" id="danger">
+                <option value="" selected>-- 请选择 --</option>
                 <option value="0">没有</option>
                 <option value="1">偶尔想过</option>
                 <option value="2">经常想</option>
@@ -292,6 +311,7 @@
         <div class="question">
             <p>9. 回避朋友、家人，不想社交？</p>
             <select class="score">
+                <option value="" selected>-- 请选择 --</option>
                 <option value="0">没有</option>
                 <option value="1">偶尔</option>
                 <option value="2">经常</option>
@@ -301,6 +321,7 @@
         <div class="question">
             <p>10. 觉得未来没有希望？</p>
             <select class="score">
+                <option value="" selected>-- 请选择 --</option>
                 <option value="0">没有</option>
                 <option value="1">偶尔</option>
                 <option value="2">经常</option>
@@ -308,7 +329,7 @@
             </select>
         </div>
 
-        <button class="submit-btn" onclick="startTest()">生成测评报告</button>
+        <button class="submit-btn" id="submitBtn" onclick="startTest()" disabled>生成测评报告</button>
 
         <div class="result-box" id="resultBox">
             <h3>📊 你的测评结果</h3>
@@ -347,6 +368,28 @@
     const resultBox = document.getElementById('resultBox');
     const resultContent = document.getElementById('resultContent');
     const balloonContainer = document.getElementById('balloonContainer');
+    const submitBtn = document.getElementById('submitBtn');
+    const tipText = document.getElementById('tipText');
+    const scoreSelects = document.querySelectorAll('.score');
+
+    // 监听所有下拉框，判断是否全部选完
+    function checkAllAnswered() {
+        let allFilled = true;
+        scoreSelects.forEach(s => {
+            if (s.value === '') allFilled = false;
+        });
+        submitBtn.disabled = !allFilled;
+        if (!allFilled) {
+            tipText.style.display = 'block';
+        } else {
+            tipText.style.display = 'none';
+        }
+    }
+
+    // 给每个下拉框加监听
+    scoreSelects.forEach(s => {
+        s.addEventListener('change', checkAllAnswered);
+    });
 
     // 视觉效果（完全保留你原来的动画）
     function updateVisualFeedback(state) {
@@ -396,11 +439,10 @@
 
     // 测评核心逻辑
     function startTest() {
-        let scores = document.querySelectorAll('.score');
         let total = 0;
         let danger = 0;
 
-        scores.forEach((s, idx) => {
+        scoreSelects.forEach((s) => {
             let v = parseInt(s.value);
             total += v;
             if (s.id === 'danger') danger = v;
@@ -431,6 +473,7 @@
 
     // 初始化
     updateVisualFeedback('healthy');
+    checkAllAnswered();
 </script>
 </body>
 </html>
