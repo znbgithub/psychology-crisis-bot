@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高校心理危机预警与社工介入系统</title>
+    <style>
+        :root {
+            --critical-color: #ff0000;
+            --sub-healthy-color: #ffa500;
+            --healthy-color: #00ff00;
+            --current-color: #00ff00;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+            min-height: 100vh;
+            transition: all 0.5s ease;
+            overflow-x: hidden;
+        }
+
+        /* 全屏闪烁边框 */
+        .fullscreen-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        .border-light {
+            position: absolute;
+            background: var(--current-color);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .border-top, .border-bottom { left: 0; right: 0; height: 0; }
+        .border-top { top: 0; }
+        .border-bottom { bottom: 0; }
+        .border-left, .border-right { top: 0; bottom: 0; width: 0; }
+        .border-left { left: 0; }
+        .border-right { right: 0; }
+
+        .corner {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .corner::before, .corner::after {
+            content: '';
+            position: absolute;
+            background: var(--current-color);
+        }
+
+        .corner-tl { top: 0; left: 0; }
+        .corner-tl::before { top: 0; left: 0; width: 100px; height: 6px; }
+        .corner-tl::after { top: 0; left: 0; width: 6px; height: 100px; }
+
+        .corner-tr { top: 0; right: 0; }
+        .corner-tr::before { top: 0; right: 0; width: 100px; height: 6px; }
+        .corner-tr::after { top: 0; right: 0; width: 6px; height: 100px; }
+
+        .corner-bl { bottom: 0; left: 0; }
+        .corner-bl::before { bottom: 0; left: 0; width: 100px; height: 6px; }
+        .corner-bl::after { bottom: 0; left: 0; width: 6px; height: 100px; }
+
+        .corner-br { bottom: 0; right: 0; }
+        .corner-br::before { bottom: 0; right: 0; width: 100px; height: 6px; }
+        .corner-br::after { bottom: 0; right: 0; width: 6px; height: 100px; }
+
+        /* 闪烁动画 */
+        .flash-critical .border-light {
+            animation: border-flash 0.5s infinite;
+        }
+        .flash-critical .corner {
+            animation: corner-flash 0.5s infinite;
+        }
+
+        @keyframes border-flash {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        @keyframes corner-flash {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .flash-sub-healthy .border-light {
+            animation: border-pulse 2s ease-in-out infinite;
+        }
+        .flash-sub-healthy .corner {
+            animation: corner-pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes border-pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        @keyframes corner-pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        .flash-healthy .border-light {
+            animation: border-stable 3s ease-in-out infinite;
+        }
+        .flash-healthy .corner {
+            animation: corner-stable 3s ease-in-out infinite;
+        }
+
+        @keyframes border-stable {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; }
+        }
+
+        @keyframes corner-stable {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; }
+        }
+
+        .bg-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 1;
+            transition: background 0.5s;
+        }
+
+        /* 主容器 */
+        .main-container {
+            position: relative;
+            z-index: 10;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .header {
+            text-align: center;
+            padding: 30px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            color: white;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(102, 126, 234, 0.4);
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .status-indicator {
+            padding: 15px;
+            border-radius: 15px;
+            text-align: center;
+            margin: 20px 0;
+            font-size: 1.3rem;
+            font-weight: bold;
+            transition: all 0.5s;
+            display: none;
+        }
+
+        .status-critical {
+            background: linear-gradient(90deg, #ff0000, #cc0000);
+            color: white;
+            animation: pulse-critical 0.5s infinite;
+        }
+
+        .status-sub-healthy {
+            background: linear-gradient(90deg, #ffa500, #ff8c00);
+            color: white;
+            animation: pulse-gentle 2s infinite;
+        }
+
+        .status-healthy {
+            background: linear-gradient(90deg, #00c853, #00e676);
+            color: white;
+        }
+
+        @keyframes pulse-critical {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(255,0,0,0.5); }
+            50% { transform: scale(1.02); box-shadow: 0 0 40px rgba(255,0,0,0.8); }
+        }
+
+        @keyframes pulse-gentle {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.01); }
+        }
+              .main-container {
+            position: relative;
+            z-index: 10;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .header {
+            text-align: center;
+            padding: 30px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            color: white;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(102, 126, 234, 0.4);
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .status-indicator {
+            padding: 15px;
+            border-radius: 15px;
+            text-align: center;
+            margin: 20px 0;
+            font-size: 1.3rem;
+            font-weight: bold;
+            display: none;
+        }
+
+        .status-critical {
+            background: linear-gradient(90deg, #ff0000, #cc0000);
+            color: white;
+            animation: pulse-critical 0.5s infinite;
+        }
+
+        .status-sub-healthy {
+            background: linear-gradient(90deg, #ffa500, #ff8c00);
+            color: white;
+            animation: pulse-gentle 2s infinite;
+        }
+
+        .status-healthy {
+            background: linear-gradient(90deg, #00c853, #00e676);
+            color: white;
+        }
+
+        @keyframes pulse-critical {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(255,0,0,0.5); }
+            50% { transform: scale(1.02); box-shadow: 0 0 40px rgba(255,0,0,0.8); }
+        }
+
+        @keyframes pulse-gentle {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.01); }
+        }
+
+        /* 紧急联系卡片 */
+        .emergency-contacts {
+            display: none;
+            background: linear-gradient(135deg, #ffebee, #ffcdd2);
+            border: 3px solid #f44336;
+            border-radius: 20px;
+            padding: 25px;
+            margin: 20px 0;
+            animation: emergency-pulse 0.5s infinite;
+        }
+
+        .emergency-contacts.show {
+            display: block;
+        }
+
+        @keyframes emergency-pulse {
+            0%, 100% { box-shadow: 0 0 30px rgba(255,0,0,0.5); }
+            50% { box-shadow: 0 0 60px rgba(255,0,0,0.8); }
+        }
+
+        .emergency-contacts h2 {
+            color: #c62828;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+        }
+
+        .contacts-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .contact-card {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            border: 2px solid #f44336;
+        }
+
+        .contact-card h3 {
+            color: #c62828;
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+
+        .contact-card .phone {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #1976d2;
+            margin: 10px 0;
+        }
+
+        .contact-card .desc {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .gentle-contacts {
+            display: none;
+            background: linear-gradient(135deg, #fff8e1, #ffecb3);
+            border: 2px solid #ffa000;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .gentle-contacts.show {
+            display: flex;
+            gap: 20px;
+        }
+
+        .gentle-card {
+            flex: 1;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border-left: 4px solid #ffa000;
+        }
+
+        /* 聊天区域 */
+        .chat-container {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            margin: 20px 0;
+        }
+
+        .chat-messages {
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            background: #f5f5f5;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 15px;
+            border-radius: 15px;
+        }
+
+        .message.user {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            margin-left: 50px;
+        }
+
+        .message.assistant {
+            background: white;
+            border: 1px solid #e0e0e0;
+            margin-right: 50px;
+        }
+
+        .message .sender {
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+
+        .message.user .sender {
+            color: rgba(255,255,255,0.8);
+        }
+
+        .message.assistant .sender {
+            color: #667eea;
+        }
+
+        .input-container {
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-container textarea {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            font-size: 1rem;
+            resize: none;
+            font-family: inherit;
+        }
+
+        .input-container textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .input-container button {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 1.1rem;
+            cursor: pointer;
+        }
+
+        .input-container button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .balloon-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 100;
+            overflow: hidden;
+        }
+
+        .balloon {
+            position: absolute;
+            bottom: -100px;
+            width: 40px;
+            height: 50px;
+            background: linear-gradient(135deg, #00c853, #00e676);
+            border-radius: 50%;
+            animation: float-up 4s ease-in-out forwards;
+        }
+
+        .balloon::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-top: 15px solid #00c853;
+        }
+
+        @keyframes float-up {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(-100vh) rotate(20deg); opacity: 0; }
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .footer .hotline {
+            background: #fff3e0;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+        }
+
+        @media (max-width: 600px) {
+            .header h1 { font-size: 1.5rem; }
+            .contacts-grid { grid-template-columns: 1fr; }
+            .gentle-contacts.show { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <!-- 全屏闪烁边框 -->
+    <div class="fullscreen-container" id="fullscreenBorder">
+        <div class="border-light border-top"></div>
+        <div class="border-light border-bottom"></div>
+        <div class="border-light border-left"></div>
+        <div class="border-light border-right"></div>
+        <div class="corner corner-tl"></div>
+        <div class="corner corner-tr"></div>
+        <div class="corner corner-bl"></div>
+        <div class="corner corner-br"></div>
+    </div>
+
+    <div class="bg-overlay" id="bgOverlay"></div>
+    <div class="balloon-container" id="balloonContainer"></div>
+
+    <div class="main-container">
+        <!-- 头部 -->
+        <div class="header">
+            <h1>🆘 高校心理危机预警与社工介入系统</h1>
+            <p>智能心理状态检测 · 实时视觉反馈 · 专业干预建议</p>
+        </div>
+
+        <!-- 状态指示器 -->
+        <div class="status-indicator" id="statusIndicator"></div>
+
+        <!-- 紧急联系方式 -->
+        <div class="emergency-contacts" id="emergencyContacts">
+            <h2>🚨 请立即寻求帮助</h2>
+            <div class="contacts-grid">
+                <div class="contact-card">
+                    <h3>🚨 报警电话</h3>
+                    <div class="phone">110</div>
+                    <div class="desc">紧急报警</div>
+                </div>
+                <div class="contact-card">
+                    <h3>🚨 急救电话</h3>
+                    <div class="phone">120</div>
+                    <div class="desc">医疗急救</div>
+                </div>
+                <div class="contact-card">
+                    <h3>📞 全国生命热线</h3>
+                    <div class="phone">400-161-9995</div>
+                    <div class="desc">24小时心理咨询</div>
+                </div>
+                <div class="contact-card">
+                    <h3>📞 北京危机干预</h3>
+                    <div class="phone">010-82951332</div>
+                    <div class="desc">24小时热线</div>
+                </div>
+                <div class="contact-card">
+                    <h3>📞 心理援助热线</h3>
+                    <div class="phone">12356</div>
+                    <div class="desc">全国统一</div>
+                </div>
+                <div class="contact-card">
+                    <h3>📞 青少年热线</h3>
+                    <div class="phone">12355</div>
+                    <div class="desc">共青团热线</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 温和联系卡片 -->
+        <div class="gentle-contacts" id="gentleContacts">
+            <div class="gentle-card">
+                <h3>📞 心理援助热线</h3>
+                <div class="phone" style="font-size: 1.5rem;">400-161-9995</div>
+                <div class="desc">24小时在线倾听</div>
+            </div>
+            <div class="gentle-card">
+                <h3>🏥 学校心理咨询</h3>
+                <div class="phone" style="font-size: 1.2rem;">联系辅导员预约</div>
+                <div class="desc">专业老师为你服务</div>
+            </div>
+        </div>
+
+        <!-- 聊天区域 -->
+        <div class="chat-container">
+            <div class="chat-messages" id="chatMessages">
+                <div class="message assistant">
+                    <div class="sender">🩺 系统</div>
+                    <div class="content">欢迎使用高校心理危机预警与社工介入系统。
+
+请描述你的情况或困扰，我会为你提供专业的心理支持和建议。
+
+📞 如需紧急帮助，请拨打：400-161-9995</div>
+                </div>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p style="margin-top: 10px;">正在分析，请稍候...</p>
+            </div>
+
+            <div class="input-container">
+                <textarea id="messageInput" rows="3" placeholder="请输入你的情况或困扰..."></textarea>
+                <button onclick="sendMessage()">发送</button>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="hotline">
+                📞 <strong>常用热线：</strong>
+                生命热线 400-161-9995 | 危机干预 010-82951332 | 
+                报警 110 | 急救 120
+            </div>
+            <p>⚠️ 本系统仅供参考，不能替代专业心理评估。如遇紧急情况，请立即拨打报警或急救电话。</p>
+        </div>
+    </div>
+
+    <script>
+        let currentState = 'healthy';
+        const container = document.body;
+        const borderEl = document.getElementById('fullscreenBorder');
+
+        function setVisualState(state) {
+            currentState = state;
+            borderEl.classList.remove('flash-critical', 'flash-sub-healthy', 'flash-healthy');
+            document.getElementById('statusIndicator').className = 'status-indicator';
+
+            const colors = {
+                'critical': { main: '#ff0000', bg: 'rgba(255, 0, 0, 0.1)' },
+                'sub-healthy': { main: '#ffa500', bg: 'rgba(255, 165, 0, 0.1)' },
+                'healthy': { main: '#00ff00', bg: 'rgba(0, 255, 0, 0.05)' }
+            };
+
+            const color = colors[state];
+            document.documentElement.style.setProperty('--current-color', color.main);
+
+            if (state === 'critical') {
+                borderEl.classList.add('flash-critical');
+                document.getElementById('statusIndicator').className = 'status-indicator status-critical';
+                document.getElementById('statusIndicator').textContent = '🚨 紧急预警 - 请立即求助';
+                document.getElementById('statusIndicator').style.display = 'block';
+                document.getElementById('emergencyContacts').classList.add('show');
+                document.getElementById('gentleContacts').classList.remove('show');
+            } else if (state === 'sub-healthy') {
+                borderEl.classList.add('flash-sub-healthy');
+                document.getElementById('statusIndicator').className = 'status-indicator status-sub-healthy';
+                document.getElementById('statusIndicator').textContent = '💛 需要关注 - 我们在这里';
+                document.getElementById('statusIndicator').style.display = 'block';
+                document.getElementById('gentleContacts').classList.add('show');
+                document.getElementById('emergencyContacts').classList.remove('show');
+            } else {
+                borderEl.classList.add('flash-healthy');
+                document.getElementById('statusIndicator').className = 'status-indicator status-healthy';
+                document.getElementById('statusIndicator').textContent = '💚 状态良好 - 继续保持';
+                document.getElementById('statusIndicator').style.display = 'block';
+                document.getElementById('gentleContacts').classList.remove('show');
+                document.getElementById('emergencyContacts').classList.remove('show');
+                showBalloons();
+            }
+        }
+
+        function showBalloons() {
+            const container = document.getElementById('balloonContainer');
+            const colors = ['#00c853', '#00e676', '#69f0ae', '#b2ff59', '#eeff41'];
+            
+            for (let i = 0; i < 15; i++) {
+                setTimeout(() => {
+                    const balloon = document.createElement('div');
+                    balloon.className = 'balloon';
+                    balloon.style.left = Math.random() * 100 + '%';
+                    balloon.style.background = colors[Math.floor(Math.random() * colors.length)];
+                    balloon.style.animationDuration = (3 + Math.random() * 2) + 's';
+                    container.appendChild(balloon);
+                    setTimeout(() => balloon.remove(), 5000);
+                }, i * 200);
+            }
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            if (!message) return;
+
+            addMessage('user', message);
+            input.value = '';
+            document.getElementById('loading').classList.add('show');
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: message })
+                });
+
+                const data = await response.json();
+                setVisualState(data.mental_state.state);
+                addMessage('assistant', data.response);
+            } catch (error) {
+                addMessage('assistant', '抱歉，系统遇到了问题。请拨打热线：400-161-9995');
+            } finally {
+                document.getElementById('loading').classList.remove('show');
+            }
+        }
+
+        function addMessage(role, content) {
+            const container = document.getElementById('chatMessages');
+            const div = document.createElement('div');
+            div.className = 'message ' + role;
+            div.innerHTML = '<div class="sender">' + (role === 'user' ? '👤 你' : '🩺 助手') + '</div><div class="content">' + content.replace(/\n/g, '<br>') + '</div>';
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        document.getElementById('messageInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        setVisualState('healthy');
+    </script>
+</body>
+</html>
